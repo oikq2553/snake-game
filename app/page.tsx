@@ -12,13 +12,201 @@ interface Position {
   y: number;
 }
 
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  color: string;
+  size: number;
+}
 
-function getRandomPosition(): Position {
-  return {
-    x: Math.floor(Math.random() * GRID_SIZE),
-    y: Math.floor(Math.random() * GRID_SIZE),
-  };
+interface PowerUp {
+  type: 'speed' | 'ghost' | 'double' | 'magnet';
+  position: Position;
+  icon: string;
+}
+
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  date: string;
+}
+
+type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+type Theme = 'matrix' | 'retro' | 'rainbow';
+type SnakeSkin = 'classic' | 'neon' | 'matrix' | 'fire';
+
+const POWER_UP_CONFIG = {
+  speed: { duration: 5000, icon: '⚡', color: '#ffd93d' },
+  ghost: { duration: 5000, icon: '👻', color: '#a855f7' },
+  double: { duration: 10000, icon: '✨', color: '#f472b6' },
+  magnet: { duration: 8000, icon: '🧲', color: '#60a5fa' },
+};
+
+const THEMES: Record<Theme, { bg: string; grid: string; border: string; text: string; food: string; foodGlow: string; snakeHead: string; snakeBody: string; obstacle: string }> = {
+  matrix: {
+    bg: '#0a0a0a',
+    grid: '#1a2a1a',
+    border: '#00ff41',
+    text: '#00ff41',
+    food: '#ff4444',
+    foodGlow: '#ff4444',
+    snakeHead: '#00ff41',
+    snakeBody: '#008f11',
+    obstacle: '#333333',
+  },
+  retro: {
+    bg: '#2d1b00',
+    grid: '#3d2b10',
+    border: '#ff8c00',
+    text: '#ff8c00',
+    food: '#ff6b6b',
+    foodGlow: '#ff6b6b',
+    snakeHead: '#ffb347',
+    snakeBody: '#cc8400',
+    obstacle: '#5c3a1e',
+  },
+  rainbow: {
+    bg: '#1a0a2e',
+    grid: '#2a1a4e',
+    border: '#ff00ff',
+    text: '#00ffff',
+    food: '#ffff00',
+    foodGlow: '#ffff00',
+    snakeHead: '#00ff88',
+    snakeBody: '#00cc66',
+    obstacle: '#444444',
+  },
+};
+
+const SNAKE_SKINS: Record<SnakeSkin, { head: string; body: (index: number, total: number) => string }> = {
+  classic: {
+    head: '#4ecca3',
+    body: () => '#3db892',
+  },
+  neon: {
+    head: '#ff00ff',
+    body: (i) => `hsl(${280 + i * 5}, 100%, 60%)`,
+  },
+  matrix: {
+    head: '#00ff41',
+    body: () => '#008f11',
+  },
+  fire: {
+    head: '#ff4500',
+    body: (i) => `hsl(${30 - i * 3}, 100%, ${60 - i * 1}%)`,
+  },
+};
+
+function getRandomPosition(obstacles: Position[] = []): Position {
+  let pos: Position;
+  let attempts = 0;
+  do {
+    pos = {
+      x: Math.floor(Math.random() * GRID_SIZE),
+      y: Math.floor(Math.random() * GRID_SIZE),
+    };
+    attempts++;
+  } while (
+    obstacles.some((o) => o.x === pos.x && o.y === pos.y) &&
+    attempts < 100
+  );
+  return pos;
+}
+
+function generateObstacles(level: number): Position[] {
+  const obstacles: Position[] = [];
+  const count = Math.min(level * 4, 20);
+  for (let i = 0; i < count; i++) {
+    const pos = getRandomPosition(obstacles);
+    // Keep center clear
+    if (Math.abs(pos.x - 10) > 2 || Math.abs(pos.y - 10) > 2) {
+      obstacles.push(pos);
+    }
+  }
+  return obstacles;
+}
+
+// Web Audio API sound effects
+function useSound() {
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const getCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const play = useCallback(
+    (type: 'eat' | 'crash' | 'gameover' | 'powerup' | 'move') => {
+      try {
+        const ctx = getCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        switch (type) {
+          case 'eat':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.15);
+            break;
+          case 'crash':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+            break;
+          case 'gameover':
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.6);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.6);
+            break;
+          case 'powerup':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523, ctx.currentTime);
+            osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1);
+            osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+            break;
+          case 'move':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.05);
+            break;
+        }
+      } catch {
+        // Silently fail if audio not supported
+      }
+    },
+    [getCtx]
+  );
+
+  return { play };
 }
 
 export default function SnakeGame() {
@@ -28,6 +216,17 @@ export default function SnakeGame() {
   const [gameOver, setGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
+  const [theme, setTheme] = useState<Theme>('matrix');
+  const [snakeSkin, setSnakeSkin] = useState<SnakeSkin>('classic');
+  const [level, setLevel] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [playerName, setPlayerName] = useState('Player');
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [screenShake, setScreenShake] = useState(0);
+  const [activePowerUp, setActivePowerUp] = useState<string | null>(null);
+  const [powerUpTimer, setPowerUpTimer] = useState(0);
 
   const snakeRef = useRef<Position[]>([{ x: 10, y: 10 }]);
   const foodRef = useRef<Position>(getRandomPosition());
@@ -35,6 +234,104 @@ export default function SnakeGame() {
   const nextDirectionRef = useRef<Direction>('RIGHT');
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const speedRef = useRef(INITIAL_SPEED);
+  const obstaclesRef = useRef<Position[]>([]);
+  const powerUpsRef = useRef<PowerUp[]>([]);
+  const activePowerUpRef = useRef<{ type: string; expiresAt: number } | null>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const screenShakeRef = useRef(0);
+  const scoreMultiplierRef = useRef(1);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const magnetTargetRef = useRef<Position | null>(null);
+  const { play } = useSound();
+
+  const currentTheme = THEMES[theme];
+  const currentSkin = SNAKE_SKINS[snakeSkin];
+
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('snakeLeaderboard');
+      if (saved) setLeaderboard(JSON.parse(saved));
+      const savedName = localStorage.getItem('snakePlayerName');
+      if (savedName) setPlayerName(savedName);
+      const savedTheme = localStorage.getItem('snakeTheme') as Theme;
+      if (savedTheme && THEMES[savedTheme]) setTheme(savedTheme);
+      const savedSkin = localStorage.getItem('snakeSkin') as SnakeSkin;
+      if (savedSkin && SNAKE_SKINS[savedSkin]) setSnakeSkin(savedSkin);
+      const savedHigh = localStorage.getItem('snakeHighScore');
+      if (savedHigh) setHighScore(parseInt(savedHigh, 10));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const saveLeaderboard = useCallback((entries: LeaderboardEntry[]) => {
+    localStorage.setItem('snakeLeaderboard', JSON.stringify(entries));
+    setLeaderboard(entries);
+  }, []);
+
+  const spawnParticles = useCallback((x: number, y: number, color: string, count = 8) => {
+    const newParticles: Particle[] = [];
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+      const speed = 1 + Math.random() * 2;
+      newParticles.push({
+        x: x * CELL_SIZE + CELL_SIZE / 2,
+        y: y * CELL_SIZE + CELL_SIZE / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        maxLife: 1,
+        color,
+        size: 2 + Math.random() * 3,
+      });
+    }
+    particlesRef.current = [...particlesRef.current, ...newParticles];
+    setParticles(particlesRef.current);
+  }, []);
+
+  const spawnPowerUp = useCallback((obstacles: Position[]) => {
+    if (Math.random() > 0.3) return; // 30% chance
+    const types: PowerUp['type'][] = ['speed', 'ghost', 'double', 'magnet'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const pos = getRandomPosition(obstacles);
+    powerUpsRef.current = [...powerUpsRef.current, { type, position: pos, icon: POWER_UP_CONFIG[type].icon }];
+  }, []);
+
+  const activatePowerUp = useCallback((type: PowerUp['type']) => {
+    const config = POWER_UP_CONFIG[type];
+    const expiresAt = Date.now() + config.duration;
+    activePowerUpRef.current = { type, expiresAt };
+    setActivePowerUp(config.icon);
+    setPowerUpTimer(config.duration);
+    play('powerup');
+
+    switch (type) {
+      case 'speed':
+        speedRef.current = Math.max(30, INITIAL_SPEED / 2);
+        break;
+      case 'double':
+        scoreMultiplierRef.current = 2;
+        break;
+      case 'magnet':
+        magnetTargetRef.current = foodRef.current;
+        break;
+    }
+  }, [play]);
+
+  const deactivatePowerUp = useCallback(() => {
+    activePowerUpRef.current = null;
+    setActivePowerUp(null);
+    setPowerUpTimer(0);
+    speedRef.current = Math.max(50, INITIAL_SPEED - Math.floor(score / 50) * 5);
+    scoreMultiplierRef.current = 1;
+    magnetTargetRef.current = null;
+  }, [score]);
+
+  const triggerScreenShake = useCallback((intensity: number) => {
+    screenShakeRef.current = intensity;
+    setScreenShake(intensity);
+  }, []);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -42,12 +339,23 @@ export default function SnakeGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
-    ctx.fillStyle = '#16213e';
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    // Screen shake
+    ctx.save();
+    if (screenShakeRef.current > 0) {
+      const shakeX = (Math.random() - 0.5) * screenShakeRef.current;
+      const shakeY = (Math.random() - 0.5) * screenShakeRef.current;
+      ctx.translate(shakeX, shakeY);
+      screenShakeRef.current *= 0.9;
+      if (screenShakeRef.current < 0.5) screenShakeRef.current = 0;
+      setScreenShake(screenShakeRef.current);
+    }
 
-    // Draw grid (subtle)
-    ctx.strokeStyle = '#1a2a4a';
+    // Clear canvas
+    ctx.fillStyle = currentTheme.bg;
+    ctx.fillRect(-10, -10, CANVAS_SIZE + 20, CANVAS_SIZE + 20);
+
+    // Draw grid
+    ctx.strokeStyle = currentTheme.grid;
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= GRID_SIZE; i++) {
       ctx.beginPath();
@@ -60,11 +368,31 @@ export default function SnakeGame() {
       ctx.stroke();
     }
 
+    // Draw obstacles
+    const obstacles = obstaclesRef.current;
+    ctx.fillStyle = currentTheme.obstacle;
+    obstacles.forEach((obs) => {
+      ctx.fillRect(
+        obs.x * CELL_SIZE,
+        obs.y * CELL_SIZE,
+        CELL_SIZE,
+        CELL_SIZE
+      );
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        obs.x * CELL_SIZE,
+        obs.y * CELL_SIZE,
+        CELL_SIZE,
+        CELL_SIZE
+      );
+    });
+
     // Draw food
     const food = foodRef.current;
-    ctx.fillStyle = '#ff6b6b';
-    ctx.shadowColor = '#ff6b6b';
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = currentTheme.food;
+    ctx.shadowColor = currentTheme.foodGlow;
+    ctx.shadowBlur = 15;
     ctx.beginPath();
     ctx.arc(
       food.x * CELL_SIZE + CELL_SIZE / 2,
@@ -76,16 +404,58 @@ export default function SnakeGame() {
     ctx.fill();
     ctx.shadowBlur = 0;
 
+    // Draw magnet line if active
+    if (activePowerUpRef.current?.type === 'magnet') {
+      const snake = snakeRef.current;
+      const head = snake[0];
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2);
+      ctx.lineTo(food.x * CELL_SIZE + CELL_SIZE / 2, food.y * CELL_SIZE + CELL_SIZE / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw power-ups
+    const powerUps = powerUpsRef.current;
+    powerUps.forEach((pu) => {
+      const config = POWER_UP_CONFIG[pu.type];
+      ctx.fillStyle = config.color;
+      ctx.globalAlpha = 0.8 + Math.sin(Date.now() / 200) * 0.2;
+      ctx.fillRect(
+        pu.position.x * CELL_SIZE + 2,
+        pu.position.y * CELL_SIZE + 2,
+        CELL_SIZE - 4,
+        CELL_SIZE - 4
+      );
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        pu.icon,
+        pu.position.x * CELL_SIZE + CELL_SIZE / 2,
+        pu.position.y * CELL_SIZE + CELL_SIZE / 2
+      );
+    });
+
     // Draw snake
     const snake = snakeRef.current;
+    const isGhost = activePowerUpRef.current?.type === 'ghost';
+
     snake.forEach((segment, index) => {
       if (index === 0) {
-        ctx.fillStyle = '#4ecca3';
-        ctx.shadowColor = '#4ecca3';
-        ctx.shadowBlur = 10;
+        ctx.fillStyle = currentSkin.head;
+        ctx.shadowColor = currentSkin.head;
+        ctx.shadowBlur = isGhost ? 20 : 10;
+        ctx.globalAlpha = isGhost ? 0.6 : 1;
       } else {
-        ctx.fillStyle = '#3db892';
+        ctx.fillStyle = currentSkin.body(index, snake.length);
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = isGhost ? 0.4 : 0.8 - (index / snake.length) * 0.3;
       }
       ctx.fillRect(
         segment.x * CELL_SIZE + 1,
@@ -94,8 +464,28 @@ export default function SnakeGame() {
         CELL_SIZE - 2
       );
     });
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
-  }, []);
+
+    // Draw particles
+    particlesRef.current = particlesRef.current.filter((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 0.02;
+      if (p.life <= 0) return false;
+
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+      return true;
+    });
+    ctx.globalAlpha = 1;
+    setParticles(particlesRef.current);
+
+    ctx.restore();
+  }, [currentTheme, currentSkin]);
 
   const moveSnake = useCallback(() => {
     const snake = snakeRef.current;
@@ -120,19 +510,53 @@ export default function SnakeGame() {
         break;
     }
 
-    // Check wall collision
-    if (
-      newHead.x < 0 ||
-      newHead.x >= GRID_SIZE ||
-      newHead.y < 0 ||
-      newHead.y >= GRID_SIZE
-    ) {
+    const isGhost = activePowerUpRef.current?.type === 'ghost';
+    const obstacles = obstaclesRef.current;
+
+    // Magnet effect: pull food closer
+    if (activePowerUpRef.current?.type === 'magnet') {
+      const food = foodRef.current;
+      const dx = food.x - newHead.x;
+      const dy = food.y - newHead.y;
+      if (Math.abs(dx) <= 3 && Math.abs(dy) <= 3) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          newHead.x += Math.sign(dx);
+        } else {
+          newHead.y += Math.sign(dy);
+        }
+      }
+    }
+
+    // Wall collision (wrap if ghost mode)
+    if (!isGhost) {
+      if (
+        newHead.x < 0 ||
+        newHead.x >= GRID_SIZE ||
+        newHead.y < 0 ||
+        newHead.y >= GRID_SIZE
+      ) {
+        play('crash');
+        triggerScreenShake(8);
+        setGameOver(true);
+        return;
+      }
+    } else {
+      newHead.x = ((newHead.x % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
+      newHead.y = ((newHead.y % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
+    }
+
+    // Self collision (skip if ghost mode)
+    if (!isGhost && snake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
+      play('crash');
+      triggerScreenShake(8);
       setGameOver(true);
       return;
     }
 
-    // Check self collision
-    if (snake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
+    // Obstacle collision (skip if ghost mode)
+    if (!isGhost && obstacles.some((o) => o.x === newHead.x && o.y === newHead.y)) {
+      play('crash');
+      triggerScreenShake(8);
       setGameOver(true);
       return;
     }
@@ -141,39 +565,78 @@ export default function SnakeGame() {
 
     // Check food
     const food = foodRef.current;
+    let ateFood = false;
     if (newHead.x === food.x && newHead.y === food.y) {
+      ateFood = true;
+      const points = 10 * scoreMultiplierRef.current;
       setScore((prev) => {
-        const newScore = prev + 10;
-        setHighScore((hs) => Math.max(hs, newScore));
+        const newScore = prev + points;
+        setHighScore((hs) => {
+          const newHs = Math.max(hs, newScore);
+          localStorage.setItem('snakeHighScore', String(newHs));
+          return newHs;
+        });
         return newScore;
       });
-      // Speed up slightly
+      play('eat');
+      spawnParticles(newHead.x, newHead.y, currentTheme.food, 12);
       speedRef.current = Math.max(50, INITIAL_SPEED - Math.floor(score / 50) * 5);
+
       // Place new food
-      let newFood = getRandomPosition();
+      let newFood = getRandomPosition(obstacles);
       while (snake.some((s) => s.x === newFood.x && s.y === newFood.y)) {
-        newFood = getRandomPosition();
+        newFood = getRandomPosition(obstacles);
       }
       foodRef.current = newFood;
-    } else {
+
+      // Spawn power-up occasionally
+      spawnPowerUp(obstacles);
+    }
+
+    // Check power-up collision
+    const powerUps = powerUpsRef.current;
+    const puIndex = powerUps.findIndex(
+      (pu) => pu.position.x === newHead.x && pu.position.y === newHead.y
+    );
+    if (puIndex >= 0) {
+      const pu = powerUps[puIndex];
+      activatePowerUp(pu.type);
+      spawnParticles(newHead.x, newHead.y, POWER_UP_CONFIG[pu.type].color, 10);
+      powerUpsRef.current = powerUps.filter((_, i) => i !== puIndex);
+    }
+
+    if (!ateFood) {
       snake.pop();
     }
 
     draw();
-  }, [score, draw]);
+  }, [score, draw, play, triggerScreenShake, spawnParticles, spawnPowerUp, activatePowerUp, currentTheme.food]);
 
   const startGame = useCallback(() => {
+    const obstacles = generateObstacles(level);
+    obstaclesRef.current = obstacles;
     snakeRef.current = [{ x: 10, y: 10 }];
-    foodRef.current = getRandomPosition();
+    foodRef.current = getRandomPosition(obstacles);
     directionRef.current = 'RIGHT';
     nextDirectionRef.current = 'RIGHT';
     speedRef.current = INITIAL_SPEED;
+    powerUpsRef.current = [];
+    activePowerUpRef.current = null;
+    particlesRef.current = [];
+    screenShakeRef.current = 0;
+    scoreMultiplierRef.current = 1;
+    magnetTargetRef.current = null;
     setScore(0);
     setGameOver(false);
     setIsPaused(false);
     setIsStarted(true);
-  }, []);
+    setActivePowerUp(null);
+    setPowerUpTimer(0);
+    setParticles([]);
+    setScreenShake(0);
+  }, [level]);
 
+  // Game loop
   useEffect(() => {
     if (!isStarted || gameOver || isPaused) {
       if (gameLoopRef.current) {
@@ -191,10 +654,29 @@ export default function SnakeGame() {
     };
   }, [isStarted, gameOver, isPaused, moveSnake]);
 
+  // Power-up timer
+  useEffect(() => {
+    if (!activePowerUpRef.current) return;
+
+    const interval = setInterval(() => {
+      const remaining = activePowerUpRef.current
+        ? Math.max(0, activePowerUpRef.current.expiresAt - Date.now())
+        : 0;
+      setPowerUpTimer(remaining);
+      if (remaining <= 0) {
+        deactivatePowerUp();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [activePowerUp, deactivatePowerUp]);
+
+  // Initial draw
   useEffect(() => {
     draw();
   }, [draw]);
 
+  // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isStarted) return;
@@ -243,18 +725,211 @@ export default function SnakeGame() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isStarted]);
 
+  // Touch / swipe controls
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || !isStarted) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const minSwipe = 30;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipe) {
+      if (dx > 0 && directionRef.current !== 'LEFT') {
+        nextDirectionRef.current = 'RIGHT';
+      } else if (dx < 0 && directionRef.current !== 'RIGHT') {
+        nextDirectionRef.current = 'LEFT';
+      }
+    } else if (Math.abs(dy) > minSwipe) {
+      if (dy > 0 && directionRef.current !== 'UP') {
+        nextDirectionRef.current = 'DOWN';
+      } else if (dy < 0 && directionRef.current !== 'DOWN') {
+        nextDirectionRef.current = 'UP';
+      }
+    }
+    touchStartRef.current = null;
+  }, [isStarted]);
+
+  const handleDPad = useCallback((dir: Direction) => {
+    if (!isStarted) return;
+    const opposites: Record<Direction, Direction> = {
+      UP: 'DOWN',
+      DOWN: 'UP',
+      LEFT: 'RIGHT',
+      RIGHT: 'LEFT',
+    };
+    if (directionRef.current !== opposites[dir]) {
+      nextDirectionRef.current = dir;
+    }
+  }, [isStarted]);
+
+  // Save score to leaderboard
+  const saveScore = useCallback(() => {
+    const entry: LeaderboardEntry = {
+      name: playerName,
+      score,
+      date: new Date().toLocaleDateString(),
+    };
+    const newLeaderboard = [...leaderboard, entry]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+    saveLeaderboard(newLeaderboard);
+  }, [playerName, score, leaderboard, saveLeaderboard]);
+
+  // Save score when game over
+  useEffect(() => {
+    if (gameOver && score > 0) {
+      saveScore();
+      play('gameover');
+    }
+  }, [gameOver, score, saveScore, play]);
+
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem('snakeTheme', newTheme);
+  };
+
+  const handleSkinChange = (newSkin: SnakeSkin) => {
+    setSnakeSkin(newSkin);
+    localStorage.setItem('snakeSkin', newSkin);
+  };
+
+  const handleNameChange = (newName: string) => {
+    setPlayerName(newName);
+    localStorage.setItem('snakePlayerName', newName);
+  };
+
   return (
     <div className="game-container">
-      <h1 className="game-title">🐍 Snake Game</h1>
-      <div className="score-board">
-        Score: {score} | High Score: {highScore}
+      <h1 className="game-title" style={{ color: currentTheme.text }}>
+        🐍 Snake Game
+      </h1>
+
+      <div className="score-board" style={{ color: currentTheme.food }}>
+        Score: {score} | High Score: {highScore} | Level: {level}
       </div>
-      <div className="canvas-wrapper">
+
+      {activePowerUp && (
+        <div className="powerup-indicator">
+          <span className="powerup-icon">{activePowerUp}</span>
+          <span className="powerup-timer">{(powerUpTimer / 1000).toFixed(1)}s</span>
+        </div>
+      )}
+
+      <div className="game-controls">
+        <button className="control-btn" onClick={() => setShowSettings(!showSettings)}>
+          ⚙️ Settings
+        </button>
+        <button className="control-btn" onClick={() => setShowLeaderboard(!showLeaderboard)}>
+          🏆 Leaderboard
+        </button>
+      </div>
+
+      {showSettings && (
+        <div className="settings-panel">
+          <h3>Settings</h3>
+          <div className="setting-row">
+            <label>Player Name:</label>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => handleNameChange(e.target.value)}
+              maxLength={20}
+              className="name-input"
+            />
+          </div>
+          <div className="setting-row">
+            <label>Theme:</label>
+            <div className="theme-buttons">
+              {(['matrix', 'retro', 'rainbow'] as Theme[]).map((t) => (
+                <button
+                  key={t}
+                  className={`theme-btn ${theme === t ? 'active' : ''}`}
+                  onClick={() => handleThemeChange(t)}
+                  style={{ borderColor: THEMES[t].border }}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="setting-row">
+            <label>Snake Skin:</label>
+            <div className="skin-buttons">
+              {(['classic', 'neon', 'matrix', 'fire'] as SnakeSkin[]).map((s) => (
+                <button
+                  key={s}
+                  className={`skin-btn ${snakeSkin === s ? 'active' : ''}`}
+                  onClick={() => handleSkinChange(s)}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="setting-row">
+            <label>Level (Difficulty):</label>
+            <input
+              type="range"
+              min={1}
+              max={5}
+              value={level}
+              onChange={(e) => setLevel(parseInt(e.target.value))}
+              className="level-slider"
+            />
+            <span>{level}</span>
+          </div>
+        </div>
+      )}
+
+      {showLeaderboard && (
+        <div className="leaderboard-panel">
+          <h3>🏆 Leaderboard</h3>
+          {leaderboard.length === 0 ? (
+            <p>No scores yet. Play a game!</p>
+          ) : (
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Score</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboard.map((entry, i) => (
+                  <tr key={i} className={entry.name === playerName ? 'highlight' : ''}>
+                    <td>{i + 1}</td>
+                    <td>{entry.name}</td>
+                    <td>{entry.score}</td>
+                    <td>{entry.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      <div
+        className="canvas-wrapper"
+        style={{
+          boxShadow: screenShake > 0 ? `0 0 ${screenShake * 2}px ${currentTheme.border}` : undefined,
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={CANVAS_SIZE}
           height={CANVAS_SIZE}
           className="game-canvas"
+          style={{ borderColor: currentTheme.border }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         />
         {gameOver && (
           <div className="game-over">
@@ -267,7 +942,7 @@ export default function SnakeGame() {
         )}
         {!isStarted && (
           <div className="game-over">
-            <h2 style={{ color: '#4ecca3' }}>Ready?</h2>
+            <h2 style={{ color: currentTheme.text }}>Ready?</h2>
             <button className="restart-btn" onClick={startGame}>
               Start Game
             </button>
@@ -277,11 +952,45 @@ export default function SnakeGame() {
           <div className="game-over">
             <h2 style={{ color: '#ffd93d' }}>Paused</h2>
             <p>Press SPACE to resume</p>
+            <button className="restart-btn" onClick={() => setIsPaused(false)}>
+              Resume
+            </button>
           </div>
         )}
       </div>
+
+      {/* Mobile D-Pad */}
+      <div className="mobile-controls">
+        <div className="dpad">
+          <button className="dpad-btn dpad-up" onClick={() => handleDPad('UP')}>
+            ▲
+          </button>
+          <div className="dpad-middle">
+            <button className="dpad-btn dpad-left" onClick={() => handleDPad('LEFT')}>
+              ◀
+            </button>
+            <button className="dpad-btn dpad-center" onClick={() => setIsPaused((p) => !p)}>
+              ⏸
+            </button>
+            <button className="dpad-btn dpad-right" onClick={() => handleDPad('RIGHT')}>
+              ▶
+            </button>
+          </div>
+          <button className="dpad-btn dpad-down" onClick={() => handleDPad('DOWN')}>
+            ▼
+          </button>
+        </div>
+      </div>
+
       <div className="controls">
-        <p>Arrow Keys or WASD to move | SPACE to pause</p>
+        <p>Arrow Keys or WASD to move | SPACE to pause | Swipe on mobile</p>
+      </div>
+
+      <div className="powerup-legend">
+        <span>⚡ Speed</span>
+        <span>👻 Ghost</span>
+        <span>✨ Double</span>
+        <span>🧲 Magnet</span>
       </div>
     </div>
   );
