@@ -819,18 +819,18 @@ export default function SnakeGame() {
       </h1>
 
       <div className="score-board" style={{ color: currentTheme.food }}>
-        <span className="score-item">
+        <div className="score-item">
           <span className="score-label">Score</span>
           <span className="score-value">{score}</span>
-        </span>
-        <span className="score-item">
+        </div>
+        <div className="score-item">
           <span className="score-label">High</span>
           <span className="score-value">{highScore}</span>
-        </span>
-        <span className="score-item">
+        </div>
+        <div className="score-item">
           <span className="score-label">Level</span>
           <span className="score-value">{level}</span>
-        </span>
+        </div>
       </div>
 
       {activePowerUp && (
@@ -842,24 +842,24 @@ export default function SnakeGame() {
         </div>
       )}
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-3 mb-6">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setShowSettings(!showSettings)}
-          className="gap-2 border-border/50 bg-background/80 hover:bg-accent"
+          className="gap-2 px-4 py-2 rounded-xl border-[2px] border-[rgba(78,204,163,0.2)] bg-[rgba(30,41,59,0.8)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.4)] shadow-[0_4px_15px_rgba(0,0,0,0.2)] text-sm font-semibold transition-all"
         >
-          <Settings className="h-4 w-4" />
-          Settings
+          <Settings className="h-4 w-4 text-[#4ecca3]" />
+          <span className="text-[#4ecca3]">Settings</span>
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setShowLeaderboard(!showLeaderboard)}
-          className="gap-2 border-border/50 bg-background/80 hover:bg-accent"
+          className="gap-2 px-4 py-2 rounded-xl border-[2px] border-[rgba(255,193,7,0.2)] bg-[rgba(30,41,59,0.8)] hover:bg-[rgba(255,193,7,0.15)] hover:border-[rgba(255,193,7,0.4)] shadow-[0_4px_15px_rgba(0,0,0,0.2)] text-sm font-semibold transition-all"
         >
-          <Trophy className="h-4 w-4" />
-          Leaderboard
+          <Trophy className="h-4 w-4 text-[#ffc107]" />
+          <span className="text-[#ffc107]">Leaderboard</span>
         </Button>
       </div>
 
@@ -1042,51 +1042,55 @@ export default function SnakeGame() {
         )}
       </div>
 
-      {/* Mobile D-Pad */}
-      <div className="mt-4 block sm:hidden">
-        <div className="grid grid-cols-3 gap-1 w-[180px] mx-auto">
+      {/* Modern Mobile D-Pad */}
+      <div className="mt-6 block sm:hidden">
+        <div className="grid grid-cols-3 gap-2 w-[200px] mx-auto">
           <div />
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('UP')}
-            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
           >
-            <ArrowUp className="h-6 w-6" />
+            <ArrowUp className="h-7 w-7 text-[#4ecca3]" />
           </Button>
           <div />
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('LEFT')}
-            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
           >
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="h-7 w-7 text-[#4ecca3]" />
           </Button>
           <Button
             variant="outline"
             size="icon"
             onClick={() => setIsPaused((p) => !p)}
-            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(255,193,7,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(255,193,7,0.15)] hover:border-[rgba(255,193,7,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
           >
-            {isPaused ? <Play className="h-6 w-6" /> : <Pause className="h-6 w-6" />}
+            {isPaused ? (
+              <Play className="h-7 w-7 text-[#ffc107]" />
+            ) : (
+              <Pause className="h-7 w-7 text-[#ffc107]" />
+            )}
           </Button>
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('RIGHT')}
-            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
           >
-            <ArrowRight className="h-6 w-6" />
+            <ArrowRight className="h-7 w-7 text-[#4ecca3]" />
           </Button>
           <div />
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('DOWN')}
-            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
           >
-            <ArrowDown className="h-6 w-6" />
+            <ArrowDown className="h-7 w-7 text-[#4ecca3]" />
           </Button>
           <div />
         </div>
@@ -1096,18 +1100,22 @@ export default function SnakeGame() {
         <p>Arrow Keys or WASD to move | SPACE to pause | Swipe on mobile</p>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-yellow-500">
-          ⚡ Speed
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/10 px-3 py-1.5 text-yellow-500">
+          <span>⚡</span>
+          <span>Speed</span>
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-1 text-purple-500">
-          👻 Ghost
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 px-3 py-1.5 text-purple-500">
+          <span>👻</span>
+          <span>Ghost</span>
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2 py-1 text-pink-500">
-          ✨ Double
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 px-3 py-1.5 text-pink-500">
+          <span>✨</span>
+          <span>Double</span>
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-blue-500">
-          🧲 Magnet
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1.5 text-blue-500">
+          <span>🧲</span>
+          <span>Magnet</span>
         </span>
       </div>
     </div>

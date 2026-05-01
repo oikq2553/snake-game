@@ -87,10 +87,12 @@
 
 .score-board {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
   font-size: 1rem;
   font-weight: 600;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .score-item {
@@ -98,6 +100,11 @@
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   border: 1px solid rgba(78, 204, 163, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 70px;
 }
 
 .score-label {
@@ -105,12 +112,14 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
 }
 
 .score-value {
   color: #4ecca3;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .game-canvas {
@@ -148,19 +157,19 @@
   display: inline-block;
 }
 
-/* Mobile D-Pad */
+/* Modern D-Pad */
 .d-pad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  width: 180px;
-  margin: 1rem auto 0;
+  gap: 8px;
+  width: 200px;
+  margin: 1.5rem auto 0;
 }
 
 .d-pad-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
   background: rgba(30, 41, 59, 0.9);
   border: 2px solid rgba(78, 204, 163, 0.3);
   color: #4ecca3;
@@ -172,17 +181,52 @@
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   transition: all 0.15s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.d-pad-btn:hover {
+  background: rgba(78, 204, 163, 0.15);
+  border-color: rgba(78, 204, 163, 0.6);
 }
 
 .d-pad-btn:active {
-  background: rgba(78, 204, 163, 0.2);
+  background: rgba(78, 204, 163, 0.25);
   border-color: #4ecca3;
-  transform: scale(0.95);
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(78, 204, 163, 0.2);
+}
+
+.d-pad-center {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 2px solid rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.d-pad-center:hover {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: rgba(255, 193, 7, 0.6);
+}
+
+.d-pad-center:active {
+  background: rgba(255, 193, 7, 0.25);
+  border-color: #ffc107;
+  transform: scale(0.92);
 }
 
 .d-pad-empty {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
 }
 
 /* Game Over / Pause Overlay */
