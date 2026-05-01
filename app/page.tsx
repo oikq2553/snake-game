@@ -1,6 +1,19 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import {
+  Settings,
+  Trophy,
+  Play,
+  Pause,
+  RotateCcw,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+} from 'lucide-react';
 
 const CANVAS_SIZE = 400;
 const GRID_SIZE = 20;
@@ -806,108 +819,162 @@ export default function SnakeGame() {
       </h1>
 
       <div className="score-board" style={{ color: currentTheme.food }}>
-        Score: {score} | High Score: {highScore} | Level: {level}
+        <span className="score-item">
+          <span className="score-label">Score</span>
+          <span className="score-value">{score}</span>
+        </span>
+        <span className="score-item">
+          <span className="score-label">High</span>
+          <span className="score-value">{highScore}</span>
+        </span>
+        <span className="score-item">
+          <span className="score-label">Level</span>
+          <span className="score-value">{level}</span>
+        </span>
       </div>
 
       {activePowerUp && (
-        <div className="powerup-indicator">
-          <span className="powerup-icon">{activePowerUp}</span>
-          <span className="powerup-timer">{(powerUpTimer / 1000).toFixed(1)}s</span>
+        <div className="powerup-bar">
+          <span className="powerup-badge speed">
+            <span>{activePowerUp}</span>
+            <span>{(powerUpTimer / 1000).toFixed(1)}s</span>
+          </span>
         </div>
       )}
 
-      <div className="game-controls">
-        <button className="control-btn" onClick={() => setShowSettings(!showSettings)}>
-          ⚙️ Settings
-        </button>
-        <button className="control-btn" onClick={() => setShowLeaderboard(!showLeaderboard)}>
-          🏆 Leaderboard
-        </button>
+      <div className="flex items-center gap-2 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowSettings(!showSettings)}
+          className="gap-2 border-border/50 bg-background/80 hover:bg-accent"
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowLeaderboard(!showLeaderboard)}
+          className="gap-2 border-border/50 bg-background/80 hover:bg-accent"
+        >
+          <Trophy className="h-4 w-4" />
+          Leaderboard
+        </Button>
       </div>
 
       {showSettings && (
-        <div className="settings-panel">
-          <h3>Settings</h3>
-          <div className="setting-row">
-            <label>Player Name:</label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              maxLength={20}
-              className="name-input"
-            />
-          </div>
-          <div className="setting-row">
-            <label>Theme:</label>
-            <div className="theme-buttons">
-              {(['matrix', 'retro', 'rainbow'] as Theme[]).map((t) => (
-                <button
-                  key={t}
-                  className={`theme-btn ${theme === t ? 'active' : ''}`}
-                  onClick={() => handleThemeChange(t)}
-                  style={{ borderColor: THEMES[t].border }}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+        <div className="mb-4 w-full max-w-md rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm">
+          <h3 className="mb-3 text-lg font-semibold leading-none tracking-tight">Settings</h3>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Player Name
+              </label>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                maxLength={20}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
-          </div>
-          <div className="setting-row">
-            <label>Snake Skin:</label>
-            <div className="skin-buttons">
-              {(['classic', 'neon', 'matrix', 'fire'] as SnakeSkin[]).map((s) => (
-                <button
-                  key={s}
-                  className={`skin-btn ${snakeSkin === s ? 'active' : ''}`}
-                  onClick={() => handleSkinChange(s)}
-                >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Theme
+              </label>
+              <div className="flex gap-2">
+                {(['matrix', 'retro', 'rainbow'] as Theme[]).map((t) => (
+                  <Button
+                    key={t}
+                    variant={theme === t ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleThemeChange(t)}
+                    className={cn(
+                      'capitalize',
+                      theme === t && 'ring-2 ring-ring ring-offset-2'
+                    )}
+                  >
+                    {t}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="setting-row">
-            <label>Level (Difficulty):</label>
-            <input
-              type="range"
-              min={1}
-              max={5}
-              value={level}
-              onChange={(e) => setLevel(parseInt(e.target.value))}
-              className="level-slider"
-            />
-            <span>{level}</span>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Snake Skin
+              </label>
+              <div className="flex gap-2">
+                {(['classic', 'neon', 'matrix', 'fire'] as SnakeSkin[]).map((s) => (
+                  <Button
+                    key={s}
+                    variant={snakeSkin === s ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleSkinChange(s)}
+                    className={cn(
+                      'capitalize',
+                      snakeSkin === s && 'ring-2 ring-ring ring-offset-2'
+                    )}
+                  >
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Level (Difficulty): {level}
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                value={level}
+                onChange={(e) => setLevel(parseInt(e.target.value))}
+                className="w-full"
+              />
+            </div>
           </div>
         </div>
       )}
 
       {showLeaderboard && (
-        <div className="leaderboard-panel">
-          <h3>🏆 Leaderboard</h3>
+        <div className="mb-4 w-full max-w-md rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Leaderboard
+          </h3>
           {leaderboard.length === 0 ? (
-            <p>No scores yet. Play a game!</p>
+            <p className="text-sm text-muted-foreground">No scores yet. Play a game!</p>
           ) : (
-            <table className="leaderboard-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Score</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.map((entry, i) => (
-                  <tr key={i} className={entry.name === playerName ? 'highlight' : ''}>
-                    <td>{i + 1}</td>
-                    <td>{entry.name}</td>
-                    <td>{entry.score}</td>
-                    <td>{entry.date}</td>
+            <div className="overflow-hidden rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">#</th>
+                    <th className="px-3 py-2 text-left font-medium">Name</th>
+                    <th className="px-3 py-2 text-right font-medium">Score</th>
+                    <th className="px-3 py-2 text-right font-medium">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {leaderboard.map((entry, i) => (
+                    <tr
+                      key={i}
+                      className={cn(
+                        'transition-colors hover:bg-muted/50',
+                        entry.name === playerName && 'bg-primary/10'
+                      )}
+                    >
+                      <td className="px-3 py-2 font-medium">{i + 1}</td>
+                      <td className="px-3 py-2">{entry.name}</td>
+                      <td className="px-3 py-2 text-right font-semibold">{entry.score}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">{entry.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -928,65 +995,120 @@ export default function SnakeGame() {
           onTouchEnd={handleTouchEnd}
         />
         {gameOver && (
-          <div className="game-over">
-            <h2>Game Over!</h2>
-            <p>Score: {score}</p>
-            <button className="restart-btn" onClick={startGame}>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
+            <h2 className="mb-2 text-3xl font-bold text-primary">Game Over!</h2>
+            <p className="mb-1 text-xl font-semibold text-destructive">Score: {score}</p>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={startGame}
+              className="mt-4 gap-2"
+            >
+              <RotateCcw className="h-5 w-5" />
               Play Again
-            </button>
+            </Button>
           </div>
         )}
         {!isStarted && (
-          <div className="game-over">
-            <h2 style={{ color: currentTheme.text }}>Ready?</h2>
-            <button className="restart-btn" onClick={startGame}>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
+            <h2 className="mb-4 text-3xl font-bold" style={{ color: currentTheme.text }}>
+              Ready?
+            </h2>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={startGame}
+              className="gap-2"
+            >
+              <Play className="h-5 w-5" />
               Start Game
-            </button>
+            </Button>
           </div>
         )}
         {isStarted && !gameOver && isPaused && (
-          <div className="game-over">
-            <h2 style={{ color: '#ffd93d' }}>Paused</h2>
-            <p>Press SPACE to resume</p>
-            <button className="restart-btn" onClick={() => setIsPaused(false)}>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
+            <h2 className="mb-2 text-3xl font-bold text-yellow-400">Paused</h2>
+            <p className="mb-4 text-sm text-muted-foreground">Press SPACE to resume</p>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => setIsPaused(false)}
+              className="gap-2"
+            >
+              <Play className="h-5 w-5" />
               Resume
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {/* Mobile D-Pad */}
-      <div className="mobile-controls">
-        <div className="dpad">
-          <button className="dpad-btn dpad-up" onClick={() => handleDPad('UP')}>
-            ▲
-          </button>
-          <div className="dpad-middle">
-            <button className="dpad-btn dpad-left" onClick={() => handleDPad('LEFT')}>
-              ◀
-            </button>
-            <button className="dpad-btn dpad-center" onClick={() => setIsPaused((p) => !p)}>
-              ⏸
-            </button>
-            <button className="dpad-btn dpad-right" onClick={() => handleDPad('RIGHT')}>
-              ▶
-            </button>
-          </div>
-          <button className="dpad-btn dpad-down" onClick={() => handleDPad('DOWN')}>
-            ▼
-          </button>
+      <div className="mt-4 block sm:hidden">
+        <div className="grid grid-cols-3 gap-1 w-[180px] mx-auto">
+          <div />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDPad('UP')}
+            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+          >
+            <ArrowUp className="h-6 w-6" />
+          </Button>
+          <div />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDPad('LEFT')}
+            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsPaused((p) => !p)}
+            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+          >
+            {isPaused ? <Play className="h-6 w-6" /> : <Pause className="h-6 w-6" />}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDPad('RIGHT')}
+            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+          >
+            <ArrowRight className="h-6 w-6" />
+          </Button>
+          <div />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDPad('DOWN')}
+            className="h-14 w-14 border-border/50 bg-background/80 hover:bg-accent"
+          >
+            <ArrowDown className="h-6 w-6" />
+          </Button>
+          <div />
         </div>
       </div>
 
-      <div className="controls">
+      <div className="mt-4 text-xs text-muted-foreground">
         <p>Arrow Keys or WASD to move | SPACE to pause | Swipe on mobile</p>
       </div>
 
-      <div className="powerup-legend">
-        <span>⚡ Speed</span>
-        <span>👻 Ghost</span>
-        <span>✨ Double</span>
-        <span>🧲 Magnet</span>
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-yellow-500">
+          ⚡ Speed
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-1 text-purple-500">
+          👻 Ghost
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2 py-1 text-pink-500">
+          ✨ Double
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-blue-500">
+          🧲 Magnet
+        </span>
       </div>
     </div>
   );
