@@ -681,40 +681,36 @@ export default function SnakeGame() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isStarted) return;
 
-      switch (e.key) {
+      switch (e.code) {
         case 'ArrowUp':
-        case 'w':
-        case 'W':
+        case 'KeyW':
           if (directionRef.current !== 'DOWN') {
             nextDirectionRef.current = 'UP';
           }
           e.preventDefault();
           break;
         case 'ArrowDown':
-        case 's':
-        case 'S':
+        case 'KeyS':
           if (directionRef.current !== 'UP') {
             nextDirectionRef.current = 'DOWN';
           }
           e.preventDefault();
           break;
         case 'ArrowLeft':
-        case 'a':
-        case 'A':
+        case 'KeyA':
           if (directionRef.current !== 'RIGHT') {
             nextDirectionRef.current = 'LEFT';
           }
           e.preventDefault();
           break;
         case 'ArrowRight':
-        case 'd':
-        case 'D':
+        case 'KeyD':
           if (directionRef.current !== 'LEFT') {
             nextDirectionRef.current = 'RIGHT';
           }
           e.preventDefault();
           break;
-        case ' ':
+        case 'Space':
           setIsPaused((prev) => !prev);
           e.preventDefault();
           break;
