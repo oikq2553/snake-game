@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Snake Game",
@@ -12,7 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-900 text-white antialiased">
+        {children}
+      </body>
     </html>
   );
 }

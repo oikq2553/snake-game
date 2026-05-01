@@ -135,7 +135,6 @@ function generateObstacles(level: number): Position[] {
   const count = Math.min(level * 4, 20);
   for (let i = 0; i < count; i++) {
     const pos = getRandomPosition(obstacles);
-    // Keep center clear
     if (Math.abs(pos.x - 10) > 2 || Math.abs(pos.y - 10) > 2) {
       obstacles.push(pos);
     }
@@ -143,7 +142,6 @@ function generateObstacles(level: number): Position[] {
   return obstacles;
 }
 
-// Web Audio API sound effects
 function useSound() {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -260,7 +258,6 @@ export default function SnakeGame() {
   const currentTheme = THEMES[theme];
   const currentSkin = SNAKE_SKINS[snakeSkin];
 
-  // Load from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem('snakeLeaderboard');
@@ -304,7 +301,7 @@ export default function SnakeGame() {
   }, []);
 
   const spawnPowerUp = useCallback((obstacles: Position[]) => {
-    if (Math.random() > 0.3) return; // 30% chance
+    if (Math.random() > 0.3) return;
     const types: PowerUp['type'][] = ['speed', 'ghost', 'double', 'magnet'];
     const type = types[Math.floor(Math.random() * types.length)];
     const pos = getRandomPosition(obstacles);
@@ -352,7 +349,6 @@ export default function SnakeGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Screen shake
     ctx.save();
     if (screenShakeRef.current > 0) {
       const shakeX = (Math.random() - 0.5) * screenShakeRef.current;
@@ -363,11 +359,9 @@ export default function SnakeGame() {
       setScreenShake(screenShakeRef.current);
     }
 
-    // Clear canvas
     ctx.fillStyle = currentTheme.bg;
     ctx.fillRect(-10, -10, CANVAS_SIZE + 20, CANVAS_SIZE + 20);
 
-    // Draw grid
     ctx.strokeStyle = currentTheme.grid;
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= GRID_SIZE; i++) {
@@ -381,43 +375,24 @@ export default function SnakeGame() {
       ctx.stroke();
     }
 
-    // Draw obstacles
     const obstacles = obstaclesRef.current;
     ctx.fillStyle = currentTheme.obstacle;
     obstacles.forEach((obs) => {
-      ctx.fillRect(
-        obs.x * CELL_SIZE,
-        obs.y * CELL_SIZE,
-        CELL_SIZE,
-        CELL_SIZE
-      );
+      ctx.fillRect(obs.x * CELL_SIZE, obs.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = '#555';
       ctx.lineWidth = 1;
-      ctx.strokeRect(
-        obs.x * CELL_SIZE,
-        obs.y * CELL_SIZE,
-        CELL_SIZE,
-        CELL_SIZE
-      );
+      ctx.strokeRect(obs.x * CELL_SIZE, obs.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     });
 
-    // Draw food
     const food = foodRef.current;
     ctx.fillStyle = currentTheme.food;
     ctx.shadowColor = currentTheme.foodGlow;
     ctx.shadowBlur = 15;
     ctx.beginPath();
-    ctx.arc(
-      food.x * CELL_SIZE + CELL_SIZE / 2,
-      food.y * CELL_SIZE + CELL_SIZE / 2,
-      CELL_SIZE / 2 - 2,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(food.x * CELL_SIZE + CELL_SIZE / 2, food.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Draw magnet line if active
     if (activePowerUpRef.current?.type === 'magnet') {
       const snake = snakeRef.current;
       const head = snake[0];
@@ -431,31 +406,20 @@ export default function SnakeGame() {
       ctx.setLineDash([]);
     }
 
-    // Draw power-ups
     const powerUps = powerUpsRef.current;
     powerUps.forEach((pu) => {
       const config = POWER_UP_CONFIG[pu.type];
       ctx.fillStyle = config.color;
       ctx.globalAlpha = 0.8 + Math.sin(Date.now() / 200) * 0.2;
-      ctx.fillRect(
-        pu.position.x * CELL_SIZE + 2,
-        pu.position.y * CELL_SIZE + 2,
-        CELL_SIZE - 4,
-        CELL_SIZE - 4
-      );
+      ctx.fillRect(pu.position.x * CELL_SIZE + 2, pu.position.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
       ctx.globalAlpha = 1;
       ctx.fillStyle = '#fff';
       ctx.font = '14px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(
-        pu.icon,
-        pu.position.x * CELL_SIZE + CELL_SIZE / 2,
-        pu.position.y * CELL_SIZE + CELL_SIZE / 2
-      );
+      ctx.fillText(pu.icon, pu.position.x * CELL_SIZE + CELL_SIZE / 2, pu.position.y * CELL_SIZE + CELL_SIZE / 2);
     });
 
-    // Draw snake
     const snake = snakeRef.current;
     const isGhost = activePowerUpRef.current?.type === 'ghost';
 
@@ -470,17 +434,11 @@ export default function SnakeGame() {
         ctx.shadowBlur = 0;
         ctx.globalAlpha = isGhost ? 0.4 : 0.8 - (index / snake.length) * 0.3;
       }
-      ctx.fillRect(
-        segment.x * CELL_SIZE + 1,
-        segment.y * CELL_SIZE + 1,
-        CELL_SIZE - 2,
-        CELL_SIZE - 2
-      );
+      ctx.fillRect(segment.x * CELL_SIZE + 1, segment.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
     });
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
 
-    // Draw particles
     particlesRef.current = particlesRef.current.filter((p) => {
       p.x += p.vx;
       p.y += p.vy;
@@ -526,7 +484,6 @@ export default function SnakeGame() {
     const isGhost = activePowerUpRef.current?.type === 'ghost';
     const obstacles = obstaclesRef.current;
 
-    // Magnet effect: pull food closer
     if (activePowerUpRef.current?.type === 'magnet') {
       const food = foodRef.current;
       const dx = food.x - newHead.x;
@@ -540,14 +497,8 @@ export default function SnakeGame() {
       }
     }
 
-    // Wall collision (wrap if ghost mode)
     if (!isGhost) {
-      if (
-        newHead.x < 0 ||
-        newHead.x >= GRID_SIZE ||
-        newHead.y < 0 ||
-        newHead.y >= GRID_SIZE
-      ) {
+      if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
         play('crash');
         triggerScreenShake(8);
         setGameOver(true);
@@ -558,7 +509,6 @@ export default function SnakeGame() {
       newHead.y = ((newHead.y % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
     }
 
-    // Self collision (skip if ghost mode)
     if (!isGhost && snake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
       play('crash');
       triggerScreenShake(8);
@@ -566,7 +516,6 @@ export default function SnakeGame() {
       return;
     }
 
-    // Obstacle collision (skip if ghost mode)
     if (!isGhost && obstacles.some((o) => o.x === newHead.x && o.y === newHead.y)) {
       play('crash');
       triggerScreenShake(8);
@@ -576,7 +525,6 @@ export default function SnakeGame() {
 
     snake.unshift(newHead);
 
-    // Check food
     const food = foodRef.current;
     let ateFood = false;
     if (newHead.x === food.x && newHead.y === food.y) {
@@ -595,22 +543,17 @@ export default function SnakeGame() {
       spawnParticles(newHead.x, newHead.y, currentTheme.food, 12);
       speedRef.current = Math.max(50, INITIAL_SPEED - Math.floor(score / 50) * 5);
 
-      // Place new food
       let newFood = getRandomPosition(obstacles);
       while (snake.some((s) => s.x === newFood.x && s.y === newFood.y)) {
         newFood = getRandomPosition(obstacles);
       }
       foodRef.current = newFood;
 
-      // Spawn power-up occasionally
       spawnPowerUp(obstacles);
     }
 
-    // Check power-up collision
     const powerUps = powerUpsRef.current;
-    const puIndex = powerUps.findIndex(
-      (pu) => pu.position.x === newHead.x && pu.position.y === newHead.y
-    );
+    const puIndex = powerUps.findIndex((pu) => pu.position.x === newHead.x && pu.position.y === newHead.y);
     if (puIndex >= 0) {
       const pu = powerUps[puIndex];
       activatePowerUp(pu.type);
@@ -649,7 +592,6 @@ export default function SnakeGame() {
     setScreenShake(0);
   }, [level]);
 
-  // Game loop
   useEffect(() => {
     if (!isStarted || gameOver || isPaused) {
       if (gameLoopRef.current) {
@@ -667,14 +609,11 @@ export default function SnakeGame() {
     };
   }, [isStarted, gameOver, isPaused, moveSnake]);
 
-  // Power-up timer
   useEffect(() => {
     if (!activePowerUpRef.current) return;
 
     const interval = setInterval(() => {
-      const remaining = activePowerUpRef.current
-        ? Math.max(0, activePowerUpRef.current.expiresAt - Date.now())
-        : 0;
+      const remaining = activePowerUpRef.current ? Math.max(0, activePowerUpRef.current.expiresAt - Date.now()) : 0;
       setPowerUpTimer(remaining);
       if (remaining <= 0) {
         deactivatePowerUp();
@@ -684,12 +623,10 @@ export default function SnakeGame() {
     return () => clearInterval(interval);
   }, [activePowerUp, deactivatePowerUp]);
 
-  // Initial draw
   useEffect(() => {
     draw();
   }, [draw]);
 
-  // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isStarted) return;
@@ -697,30 +634,22 @@ export default function SnakeGame() {
       switch (e.code) {
         case 'ArrowUp':
         case 'KeyW':
-          if (directionRef.current !== 'DOWN') {
-            nextDirectionRef.current = 'UP';
-          }
+          if (directionRef.current !== 'DOWN') nextDirectionRef.current = 'UP';
           e.preventDefault();
           break;
         case 'ArrowDown':
         case 'KeyS':
-          if (directionRef.current !== 'UP') {
-            nextDirectionRef.current = 'DOWN';
-          }
+          if (directionRef.current !== 'UP') nextDirectionRef.current = 'DOWN';
           e.preventDefault();
           break;
         case 'ArrowLeft':
         case 'KeyA':
-          if (directionRef.current !== 'RIGHT') {
-            nextDirectionRef.current = 'LEFT';
-          }
+          if (directionRef.current !== 'RIGHT') nextDirectionRef.current = 'LEFT';
           e.preventDefault();
           break;
         case 'ArrowRight':
         case 'KeyD':
-          if (directionRef.current !== 'LEFT') {
-            nextDirectionRef.current = 'RIGHT';
-          }
+          if (directionRef.current !== 'LEFT') nextDirectionRef.current = 'RIGHT';
           e.preventDefault();
           break;
         case 'Space':
@@ -734,7 +663,6 @@ export default function SnakeGame() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isStarted]);
 
-  // Touch / swipe controls
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
@@ -748,17 +676,11 @@ export default function SnakeGame() {
     const minSwipe = 30;
 
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipe) {
-      if (dx > 0 && directionRef.current !== 'LEFT') {
-        nextDirectionRef.current = 'RIGHT';
-      } else if (dx < 0 && directionRef.current !== 'RIGHT') {
-        nextDirectionRef.current = 'LEFT';
-      }
+      if (dx > 0 && directionRef.current !== 'LEFT') nextDirectionRef.current = 'RIGHT';
+      else if (dx < 0 && directionRef.current !== 'RIGHT') nextDirectionRef.current = 'LEFT';
     } else if (Math.abs(dy) > minSwipe) {
-      if (dy > 0 && directionRef.current !== 'UP') {
-        nextDirectionRef.current = 'DOWN';
-      } else if (dy < 0 && directionRef.current !== 'DOWN') {
-        nextDirectionRef.current = 'UP';
-      }
+      if (dy > 0 && directionRef.current !== 'UP') nextDirectionRef.current = 'DOWN';
+      else if (dy < 0 && directionRef.current !== 'DOWN') nextDirectionRef.current = 'UP';
     }
     touchStartRef.current = null;
   }, [isStarted]);
@@ -776,20 +698,16 @@ export default function SnakeGame() {
     }
   }, [isStarted]);
 
-  // Save score to leaderboard
   const saveScore = useCallback(() => {
     const entry: LeaderboardEntry = {
       name: playerName,
       score,
       date: new Date().toLocaleDateString(),
     };
-    const newLeaderboard = [...leaderboard, entry]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
+    const newLeaderboard = [...leaderboard, entry].sort((a, b) => b.score - a.score).slice(0, 10);
     saveLeaderboard(newLeaderboard);
   }, [playerName, score, leaderboard, saveLeaderboard]);
 
-  // Save score when game over
   useEffect(() => {
     if (gameOver && score > 0) {
       saveScore();
@@ -813,76 +731,83 @@ export default function SnakeGame() {
   };
 
   return (
-    <div className="game-container">
-      <h1 className="game-title" style={{ color: currentTheme.text }}>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-950 via-slate-900 to-gray-900 text-white">
+      {/* Title */}
+      <h1 
+        className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2"
+        style={{ 
+          color: currentTheme.text,
+          textShadow: `0 0 30px ${currentTheme.border}40`,
+        }}
+      >
         🐍 Snake Game
       </h1>
 
-      <div className="score-board" style={{ color: currentTheme.food }}>
-        <div className="score-item">
-          <span className="score-label">Score</span>
-          <span className="score-value">{score}</span>
+      {/* Score Board */}
+      <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-4 mt-2">
+        <div className="flex flex-col items-center bg-slate-800/80 border border-emerald-500/20 rounded-xl px-5 py-2 min-w-[80px]">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">Score</span>
+          <span className="text-2xl font-bold text-emerald-400">{score}</span>
         </div>
-        <div className="score-item">
-          <span className="score-label">High</span>
-          <span className="score-value">{highScore}</span>
+        <div className="flex flex-col items-center bg-slate-800/80 border border-amber-500/20 rounded-xl px-5 py-2 min-w-[80px]">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">High</span>
+          <span className="text-2xl font-bold text-amber-400">{highScore}</span>
         </div>
-        <div className="score-item">
-          <span className="score-label">Level</span>
-          <span className="score-value">{level}</span>
+        <div className="flex flex-col items-center bg-slate-800/80 border border-blue-500/20 rounded-xl px-5 py-2 min-w-[80px]">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">Level</span>
+          <span className="text-2xl font-bold text-blue-400">{level}</span>
         </div>
       </div>
 
+      {/* Power-up indicator */}
       {activePowerUp && (
-        <div className="powerup-bar">
+        <div className="mb-3">
           <span className="powerup-badge speed">
-            <span>{activePowerUp}</span>
-            <span>{(powerUpTimer / 1000).toFixed(1)}s</span>
+            <span className="text-base">{activePowerUp}</span>
+            <span className="font-mono">{(powerUpTimer / 1000).toFixed(1)}s</span>
           </span>
         </div>
       )}
 
-      <div className="flex items-center gap-3 mb-6">
+      {/* Settings & Leaderboard Buttons */}
+      <div className="flex items-center gap-3 mb-4">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setShowSettings(!showSettings)}
-          className="gap-2 px-4 py-2 rounded-xl border-[2px] border-[rgba(78,204,163,0.2)] bg-[rgba(30,41,59,0.8)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.4)] shadow-[0_4px_15px_rgba(0,0,0,0.2)] text-sm font-semibold transition-all"
+          className="gap-2 px-4 py-2 rounded-xl border-2 border-emerald-500/20 bg-slate-800/80 hover:bg-emerald-500/10 hover:border-emerald-500/40 text-emerald-400 shadow-lg transition-all"
         >
-          <Settings className="h-4 w-4 text-[#4ecca3]" />
-          <span className="text-[#4ecca3]">Settings</span>
+          <Settings className="h-4 w-4" />
+          <span className="font-semibold">Settings</span>
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setShowLeaderboard(!showLeaderboard)}
-          className="gap-2 px-4 py-2 rounded-xl border-[2px] border-[rgba(255,193,7,0.2)] bg-[rgba(30,41,59,0.8)] hover:bg-[rgba(255,193,7,0.15)] hover:border-[rgba(255,193,7,0.4)] shadow-[0_4px_15px_rgba(0,0,0,0.2)] text-sm font-semibold transition-all"
+          className="gap-2 px-4 py-2 rounded-xl border-2 border-amber-500/20 bg-slate-800/80 hover:bg-amber-500/10 hover:border-amber-500/40 text-amber-400 shadow-lg transition-all"
         >
-          <Trophy className="h-4 w-4 text-[#ffc107]" />
-          <span className="text-[#ffc107]">Leaderboard</span>
+          <Trophy className="h-4 w-4" />
+          <span className="font-semibold">Leaderboard</span>
         </Button>
       </div>
 
+      {/* Settings Panel */}
       {showSettings && (
-        <div className="mb-4 w-full max-w-md rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm">
-          <h3 className="mb-3 text-lg font-semibold leading-none tracking-tight">Settings</h3>
+        <div className="mb-4 w-full max-w-md rounded-xl border border-slate-700 bg-slate-900/95 p-5 shadow-xl backdrop-blur-sm">
+          <h3 className="mb-4 text-lg font-bold text-emerald-400">Settings</h3>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Player Name
-              </label>
+              <label className="text-sm font-medium text-gray-300">Player Name</label>
               <input
                 type="text"
                 value={playerName}
                 onChange={(e) => handleNameChange(e.target.value)}
                 maxLength={20}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Theme
-              </label>
+              <label className="text-sm font-medium text-gray-300">Theme</label>
               <div className="flex gap-2">
                 {(['matrix', 'retro', 'rainbow'] as Theme[]).map((t) => (
                   <Button
@@ -891,8 +816,8 @@ export default function SnakeGame() {
                     size="sm"
                     onClick={() => handleThemeChange(t)}
                     className={cn(
-                      'capitalize',
-                      theme === t && 'ring-2 ring-ring ring-offset-2'
+                      'capitalize rounded-lg',
+                      theme === t && 'ring-2 ring-emerald-400'
                     )}
                   >
                     {t}
@@ -901,9 +826,7 @@ export default function SnakeGame() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Snake Skin
-              </label>
+              <label className="text-sm font-medium text-gray-300">Snake Skin</label>
               <div className="flex gap-2">
                 {(['classic', 'neon', 'matrix', 'fire'] as SnakeSkin[]).map((s) => (
                   <Button
@@ -912,8 +835,8 @@ export default function SnakeGame() {
                     size="sm"
                     onClick={() => handleSkinChange(s)}
                     className={cn(
-                      'capitalize',
-                      snakeSkin === s && 'ring-2 ring-ring ring-offset-2'
+                      'capitalize rounded-lg',
+                      snakeSkin === s && 'ring-2 ring-emerald-400'
                     )}
                   >
                     {s}
@@ -922,54 +845,51 @@ export default function SnakeGame() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Level (Difficulty): {level}
-              </label>
+              <label className="text-sm font-medium text-gray-300">Level (Difficulty): {level}</label>
               <input
                 type="range"
                 min={1}
                 max={5}
                 value={level}
                 onChange={(e) => setLevel(parseInt(e.target.value))}
-                className="w-full"
+                className="w-full accent-emerald-500"
               />
             </div>
           </div>
         </div>
       )}
 
+      {/* Leaderboard Panel */}
       {showLeaderboard && (
-        <div className="mb-4 w-full max-w-md rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
-            <Trophy className="h-5 w-5 text-yellow-500" />
+        <div className="mb-4 w-full max-w-md rounded-xl border border-slate-700 bg-slate-900/95 p-5 shadow-xl backdrop-blur-sm">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-amber-400">
+            <Trophy className="h-5 w-5" />
             Leaderboard
           </h3>
           {leaderboard.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No scores yet. Play a game!</p>
+            <p className="text-sm text-gray-400">No scores yet. Play a game!</p>
           ) : (
-            <div className="overflow-hidden rounded-md border">
+            <div className="overflow-hidden rounded-lg border border-slate-700">
               <table className="w-full text-sm">
-                <thead className="bg-muted">
+                <thead className="bg-slate-800">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">#</th>
-                    <th className="px-3 py-2 text-left font-medium">Name</th>
-                    <th className="px-3 py-2 text-right font-medium">Score</th>
-                    <th className="px-3 py-2 text-right font-medium">Date</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-400">#</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-400">Name</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-400">Score</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-slate-700">
                   {leaderboard.map((entry, i) => (
                     <tr
                       key={i}
                       className={cn(
-                        'transition-colors hover:bg-muted/50',
-                        entry.name === playerName && 'bg-primary/10'
+                        'hover:bg-slate-800/50',
+                        entry.name === playerName && 'bg-emerald-500/10'
                       )}
                     >
-                      <td className="px-3 py-2 font-medium">{i + 1}</td>
-                      <td className="px-3 py-2">{entry.name}</td>
-                      <td className="px-3 py-2 text-right font-semibold">{entry.score}</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">{entry.date}</td>
+                      <td className="px-3 py-2 font-bold text-gray-400">{i + 1}</td>
+                      <td className="px-3 py-2 text-white">{entry.name}</td>
+                      <td className="px-3 py-2 text-right font-bold text-emerald-400">{entry.score}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -979,61 +899,61 @@ export default function SnakeGame() {
         </div>
       )}
 
-      <div
-        className="canvas-wrapper"
-        style={{
-          boxShadow: screenShake > 0 ? `0 0 ${screenShake * 2}px ${currentTheme.border}` : undefined,
-        }}
-      >
+      {/* Game Canvas */}
+      <div className="relative inline-block">
         <canvas
           ref={canvasRef}
           width={CANVAS_SIZE}
           height={CANVAS_SIZE}
-          className="game-canvas"
-          style={{ borderColor: currentTheme.border }}
+          className="rounded-xl border-2 shadow-lg shadow-emerald-500/20"
+          style={{ 
+            borderColor: currentTheme.border,
+            maxWidth: '95vw',
+            maxHeight: '60vh',
+          }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         />
+
+        {/* Game Over Overlay */}
         {gameOver && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
-            <h2 className="mb-2 text-3xl font-bold text-primary">Game Over!</h2>
-            <p className="mb-1 text-xl font-semibold text-destructive">Score: {score}</p>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/85 backdrop-blur-md">
+            <h2 className="mb-2 text-4xl font-black text-red-500">Game Over!</h2>
+            <p className="mb-1 text-xl font-bold text-white">Score: {score}</p>
+            <p className="mb-4 text-sm text-gray-400">High Score: {highScore}</p>
             <Button
-              variant="default"
-              size="lg"
               onClick={startGame}
-              className="mt-4 gap-2"
+              className="mt-2 gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-lg shadow-lg shadow-emerald-500/30 transition-all hover:scale-105"
             >
               <RotateCcw className="h-5 w-5" />
               Play Again
             </Button>
           </div>
         )}
+
+        {/* Start Overlay */}
         {!isStarted && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
-            <h2 className="mb-4 text-3xl font-bold" style={{ color: currentTheme.text }}>
-              Ready?
-            </h2>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/85 backdrop-blur-md">
+            <h2 className="mb-4 text-4xl font-black text-emerald-400">Ready?</h2>
+            <p className="mb-6 text-gray-400">Use Arrow Keys or WASD to move</p>
             <Button
-              variant="default"
-              size="lg"
               onClick={startGame}
-              className="gap-2"
+              className="gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-lg shadow-lg shadow-emerald-500/30 transition-all hover:scale-105"
             >
               <Play className="h-5 w-5" />
               Start Game
             </Button>
           </div>
         )}
+
+        {/* Pause Overlay */}
         {isStarted && !gameOver && isPaused && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
-            <h2 className="mb-2 text-3xl font-bold text-yellow-400">Paused</h2>
-            <p className="mb-4 text-sm text-muted-foreground">Press SPACE to resume</p>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-black/85 backdrop-blur-md">
+            <h2 className="mb-2 text-4xl font-black text-amber-400">Paused</h2>
+            <p className="mb-6 text-gray-400">Press SPACE to resume</p>
             <Button
-              variant="default"
-              size="lg"
               onClick={() => setIsPaused(false)}
-              className="gap-2"
+              className="gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
             >
               <Play className="h-5 w-5" />
               Resume
@@ -1042,7 +962,7 @@ export default function SnakeGame() {
         )}
       </div>
 
-      {/* Modern Mobile D-Pad */}
+      {/* Mobile D-Pad */}
       <div className="mt-6 block sm:hidden">
         <div className="grid grid-cols-3 gap-2 w-[200px] mx-auto">
           <div />
@@ -1050,72 +970,74 @@ export default function SnakeGame() {
             variant="outline"
             size="icon"
             onClick={() => handleDPad('UP')}
-            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
+            className="h-[60px] w-[60px] rounded-xl border-2 border-emerald-500/30 bg-slate-800 hover:bg-emerald-500/20 hover:border-emerald-500/60 active:scale-90 shadow-lg transition-all"
           >
-            <ArrowUp className="h-7 w-7 text-[#4ecca3]" />
+            <ArrowUp className="h-7 w-7 text-emerald-400" />
           </Button>
           <div />
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('LEFT')}
-            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
+            className="h-[60px] w-[60px] rounded-xl border-2 border-emerald-500/30 bg-slate-800 hover:bg-emerald-500/20 hover:border-emerald-500/60 active:scale-90 shadow-lg transition-all"
           >
-            <ArrowLeft className="h-7 w-7 text-[#4ecca3]" />
+            <ArrowLeft className="h-7 w-7 text-emerald-400" />
           </Button>
           <Button
             variant="outline"
             size="icon"
             onClick={() => setIsPaused((p) => !p)}
-            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(255,193,7,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(255,193,7,0.15)] hover:border-[rgba(255,193,7,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
+            className="h-[60px] w-[60px] rounded-xl border-2 border-amber-500/30 bg-slate-800 hover:bg-amber-500/20 hover:border-amber-500/60 active:scale-90 shadow-lg transition-all"
           >
             {isPaused ? (
-              <Play className="h-7 w-7 text-[#ffc107]" />
+              <Play className="h-7 w-7 text-amber-400" />
             ) : (
-              <Pause className="h-7 w-7 text-[#ffc107]" />
+              <Pause className="h-7 w-7 text-amber-400" />
             )}
           </Button>
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('RIGHT')}
-            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
+            className="h-[60px] w-[60px] rounded-xl border-2 border-emerald-500/30 bg-slate-800 hover:bg-emerald-500/20 hover:border-emerald-500/60 active:scale-90 shadow-lg transition-all"
           >
-            <ArrowRight className="h-7 w-7 text-[#4ecca3]" />
+            <ArrowRight className="h-7 w-7 text-emerald-400" />
           </Button>
           <div />
           <Button
             variant="outline"
             size="icon"
             onClick={() => handleDPad('DOWN')}
-            className="h-[60px] w-[60px] rounded-[14px] border-[2px] border-[rgba(78,204,163,0.3)] bg-[rgba(30,41,59,0.9)] hover:bg-[rgba(78,204,163,0.15)] hover:border-[rgba(78,204,163,0.6)] active:scale-[0.92] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
+            className="h-[60px] w-[60px] rounded-xl border-2 border-emerald-500/30 bg-slate-800 hover:bg-emerald-500/20 hover:border-emerald-500/60 active:scale-90 shadow-lg transition-all"
           >
-            <ArrowDown className="h-7 w-7 text-[#4ecca3]" />
+            <ArrowDown className="h-7 w-7 text-emerald-400" />
           </Button>
           <div />
         </div>
       </div>
 
-      <div className="mt-4 text-xs text-muted-foreground">
-        <p>Arrow Keys or WASD to move | SPACE to pause | Swipe on mobile</p>
+      {/* Controls Hint */}
+      <div className="mt-4 text-xs text-gray-500 text-center">
+        <p>Arrow Keys / WASD to move • SPACE to pause • Swipe on mobile</p>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/10 px-3 py-1.5 text-yellow-500">
+      {/* Power-up Legend */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 px-3 py-1.5 text-yellow-400">
           <span>⚡</span>
-          <span>Speed</span>
+          <span className="font-semibold">Speed</span>
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 px-3 py-1.5 text-purple-500">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 text-purple-400">
           <span>👻</span>
-          <span>Ghost</span>
+          <span className="font-semibold">Ghost</span>
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 px-3 py-1.5 text-pink-500">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 px-3 py-1.5 text-pink-400">
           <span>✨</span>
-          <span>Double</span>
+          <span className="font-semibold">Double</span>
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1.5 text-blue-500">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 text-blue-400">
           <span>🧲</span>
-          <span>Magnet</span>
+          <span className="font-semibold">Magnet</span>
         </span>
       </div>
     </div>
